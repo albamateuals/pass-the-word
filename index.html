@@ -158,10 +158,10 @@ const juniorSongs=[
  {title:'APT.',artist:'ROSÉ & Bruno Mars',year:'2024',intro:'audio/song3_intro.mp3',clueAudio:'audio/song3_clue.mp3',full:'audio/song3_full.mp3?v=2',clues:['Two languages.','“All you gotta do is just meet me at the”','Apartment.','Popular K-pop band.','AUDIO_CLUE']}
 ];
 const seniorSongs=[
- {title:'Espresso',artist:'Sabrina Carpenter',year:'2024',intro:'audio/senior_espresso_intro.mp3',clueAudio:'audio/senior_espresso_clue.mp3',full:'audio/senior_espresso_full.mp3?v=1',clues:['being attractive',"I'm working late 'cause I'm a singer",'a small, strong cup of coffee',"opening for Taylor Swift's Eras Tour",'AUDIO_CLUE']},
- {title:'Beauty and a Beat',artist:'Justin Bieber feat. Nicki Minaj',year:'2012',intro:'audio/senior_beauty_intro.mp3',clueAudio:'audio/senior_beauty_clue.mp3',full:'audio/senior_beauty_full.mp3?v=1',clues:['having fun and partying',"We gonna party like it's 3012 tonight",'attractiveness and a rhythm','known for his single \"Baby\"','AUDIO_CLUE']},
- {title:'Where Is My Husband!',artist:'RAYE',year:'2025',intro:'audio/senior_husband_intro.mp3',clueAudio:'audio/senior_husband_clue.mp3',full:'audio/senior_husband_full.mp3?v=1',clues:['a woman who wants to find the right man','This man is testing me',"I'm looking for the man I'm married to",'This singer likes diamond rings','AUDIO_CLUE']},
- {title:'Never Gonna Give You Up',artist:'Rick Astley',year:'1987',intro:'audio/senior_rick_intro.mp3',clueAudio:'audio/senior_rick_clue.mp3',full:'audio/senior_rick_full.mp3?v=1',clues:['This song became famous for tricking people online.','Its music video features a red-haired British singer performing in several locations.','I will never abandon you or stop offering you my support.','Never gonna run around and desert you.','AUDIO_CLUE']}
+ {title:'Espresso',artist:'Sabrina Carpenter',year:'2024',startAt:9,intro:'audio/senior_espresso_intro.mp3',clueAudio:'audio/senior_espresso_clue.mp3',full:'audio/senior_espresso_full.mp3?v=1',clues:['being attractive',"I'm working late 'cause I'm a singer",'a small, strong cup of coffee',"opening for Taylor Swift's Eras Tour",'AUDIO_CLUE']},
+ {title:'Beauty and a Beat',artist:'Justin Bieber feat. Nicki Minaj',year:'2012',startAt:30,intro:'audio/senior_beauty_intro.mp3',clueAudio:'audio/senior_beauty_clue.mp3',full:'audio/senior_beauty_full.mp3?v=1',clues:['having fun and partying',"We gonna party like it's 3012 tonight",'attractiveness and a rhythm','known for his single \"Baby\"','AUDIO_CLUE']},
+ {title:'Where Is My Husband!',artist:'RAYE',year:'2025',startAt:54,intro:'audio/senior_husband_intro.mp3',clueAudio:'audio/senior_husband_clue.mp3',full:'audio/senior_husband_full.mp3?v=1',clues:['a woman who wants to find the right man','This man is testing me',"I'm looking for the man I'm married to",'This singer likes diamond rings','AUDIO_CLUE']},
+ {title:'Never Gonna Give You Up',artist:'Rick Astley',year:'1987',startAt:42,intro:'audio/senior_rick_intro.mp3',clueAudio:'audio/senior_rick_clue.mp3',full:'audio/senior_rick_full.mp3?v=1',clues:['This song became famous for tricking people online.','Its music video features a red-haired British singer performing in several locations.','I will never abandon you or stop offering you my support.','Never gonna run around and desert you.','AUDIO_CLUE']}
 ];
 let songs=juniorSongs;;
 let songIndex=0, clueIndex=0;
@@ -222,12 +222,32 @@ function solveNow(){
  document.getElementById('solveTitle').textContent=song.title;
  document.getElementById('solveArtist').textContent=song.artist;
  const player=document.getElementById('solveAudioPlayer');
+ player.pause();
+ player.onloadedmetadata=null;
  player.src=song.full;
  player.load();
  document.getElementById('solveModal').classList.add('show');
+ // Start at the chorus for Senior songs; Junior songs default to the beginning.
+ const startAt=Number(song.startAt||0);
+ player.onloadedmetadata=()=>{
+   try { player.currentTime=Math.min(startAt, Math.max(0, player.duration-0.1)); } catch(e) {}
+   const playAttempt=player.play();
+   if(playAttempt && typeof playAttempt.catch==='function') playAttempt.catch(()=>{
+     // If the browser blocks automatic playback, the player controls remain available.
+   });
+ };
 }
 
-function closeSolve(){document.getElementById('solveModal').classList.remove('show')}
+function closeSolve(){
+ const player=document.getElementById('solveAudioPlayer');
+ player.pause();
+ player.currentTime=0;
+ player.removeAttribute('src');
+ player.load();
+ player.onloadedmetadata=null;
+ document.getElementById('solveModal').classList.remove('show');
+}
+window.addEventListener('pagehide',()=>{const player=document.getElementById('solveAudioPlayer');if(player){player.pause();player.removeAttribute('src');}});
 function resetSong(){selectSong(songIndex)}
 function loadMemorySet(set){memorySet=set;['travel','food','emotions','personality'].forEach(s=>{const el=document.getElementById('set'+s[0].toUpperCase()+s.slice(1));if(el)el.classList.toggle('active',set===s)});resetMemory(false)}
 function renderMemory(){const grid=document.getElementById('memoryGrid');grid.innerHTML='';const words=memorySets[memorySet].slice();const shuffled=words.map(word=>({word})).sort(()=>Math.random()-.5);shuffled.forEach((x,i)=>{const card=document.createElement('button');card.className='memory-card hiddenword';card.dataset.word=x.word;card.dataset.index=i;card.innerHTML=`<span class="cardnum">${i+1}</span><span class="cardword">${x.word}</span>`;card.onclick=()=>{if(memoryPhase!=='challenge')return;card.classList.toggle('revealed')};grid.appendChild(card)})}
