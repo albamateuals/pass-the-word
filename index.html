@@ -224,18 +224,21 @@ function solveNow(){
  const player=document.getElementById('solveAudioPlayer');
  player.pause();
  player.onloadedmetadata=null;
- player.src=song.full;
+ player.removeAttribute('src');
  player.load();
- document.getElementById('solveModal').classList.add('show');
- // Start at the chorus for Senior songs; Junior songs default to the beginning.
+ player.currentTime=0;
  const startAt=Number(song.startAt||0);
+ // Register the seek handler before loading, so metadata cannot arrive before the handler exists.
  player.onloadedmetadata=()=>{
    try { player.currentTime=Math.min(startAt, Math.max(0, player.duration-0.1)); } catch(e) {}
-   const playAttempt=player.play();
-   if(playAttempt && typeof playAttempt.catch==='function') playAttempt.catch(()=>{
-     // If the browser blocks automatic playback, the player controls remain available.
-   });
  };
+ player.src=song.full;
+ document.getElementById('solveModal').classList.add('show');
+ // Call play directly inside the SOLVE NOW click handler to preserve the browser's user-gesture permission.
+ const playAttempt=player.play();
+ if(playAttempt && typeof playAttempt.catch==='function') playAttempt.catch(()=>{
+   // Keep the built-in player controls available if the browser blocks playback.
+ });
 }
 
 function closeSolve(){
